@@ -49,7 +49,7 @@ func TestRegexCompiler(t *testing.T) {
 		//{"urn:foo.bar.com:{.*\\{}", '{', '}', false, "", true},
 	} {
 		k++
-		result, err := CompileRegex(c.template, c.delimiterStart, c.delimiterEnd)
+		result, err := CompileRegex(c.template, c.delimiterStart, c.delimiterEnd, true)
 		assert.Equal(t, c.failCompile, err != nil, "Case %d", k)
 		if c.failCompile || err != nil {
 			continue

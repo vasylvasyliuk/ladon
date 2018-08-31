@@ -27,9 +27,9 @@ import (
 	"log"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/ladon"
-	. "github.com/ory/ladon"
-	"github.com/ory/ladon/compiler"
+	"github.com/noahhai/ladon"
+	. "github.com/noahhai/ladon"
+	"github.com/noahhai/ladon/compiler"
 	"github.com/pkg/errors"
 )
 
@@ -161,7 +161,7 @@ func (s *SQLManagerMigrateFromMajor0Minor6ToMajor0Minor7) Create(policy Policy) 
 
 func createLinkSQL(db *sqlx.DB, tx *sql.Tx, table string, p Policy, templates []string) error {
 	for _, template := range templates {
-		reg, err := compiler.CompileRegex(template, p.GetStartDelimiter(), p.GetEndDelimiter())
+		reg, err := compiler.CompileRegex(template, p.GetStartDelimiter(), p.GetEndDelimiter(), true)
 
 		// Execute SQL statement
 		query := db.Rebind(fmt.Sprintf("INSERT INTO %s (policy, template, compiled) VALUES (?, ?, ?)", table))

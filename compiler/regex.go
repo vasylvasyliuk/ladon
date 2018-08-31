@@ -20,11 +20,11 @@
 
 // Package compiler offers a regexp compiler which compiles regex templates to regexp.Regexp
 //
-//  reg, err := compiler.CompileRegex("foo:bar.baz:<[0-9]{2,10}>", '<', '>')
+//  reg, err := compiler.CompileRegex("foo:bar.baz:<[0-9]{2,10}>", '<', '>', true)
 //  // if err != nil ...
 //  reg.MatchString("foo:bar.baz:123")
 //
-//  reg, err := compiler.CompileRegex("/foo/bar/url/{[a-z]+}", '{', '}')
+//  reg, err := compiler.CompileRegex("/foo/bar/url/{[a-z]+}", '{', '}', true)
 //  // if err != nil ...
 //  reg.MatchString("/foo/bar/url/abz")
 //
@@ -102,10 +102,10 @@ func delimiterIndices(s string, delimiterStart, delimiterEnd byte) ([]int, error
 // You can define your own delimiters. It is e.g. common to use curly braces {} but I recommend using characters
 // which have no special meaning in Regex, e.g.: <, >
 //
-//  reg, err := compiler.CompileRegex("foo:bar.baz:<[0-9]{2,10}>", '<', '>')
+//  reg, err := compiler.CompileRegex("foo:bar.baz:<[0-9]{2,10}>", '<', '>', true)
 //  // if err != nil ...
 //  reg.MatchString("foo:bar.baz:123")
-func CompileRegex(tpl string, delimiterStart, delimiterEnd byte) (*regexp.Regexp, error) {
+func CompileRegex(tpl string, delimiterStart, delimiterEnd byte, exactMatch bool) (*regexp.Regexp, error) {
 	// Check if it is well-formed.
 	idxs, errBraces := delimiterIndices(tpl, delimiterStart, delimiterEnd)
 	if errBraces != nil {
@@ -113,7 +113,9 @@ func CompileRegex(tpl string, delimiterStart, delimiterEnd byte) (*regexp.Regexp
 	}
 	varsR := make([]*regexp.Regexp, len(idxs)/2)
 	pattern := bytes.NewBufferString("")
-	pattern.WriteByte('^')
+	if exactMatch {
+		pattern.WriteByte('^')
+	}
 
 	var end int
 	var err error
@@ -134,7 +136,9 @@ func CompileRegex(tpl string, delimiterStart, delimiterEnd byte) (*regexp.Regexp
 	// Add the remaining.
 	raw := tpl[end:]
 	pattern.WriteString(regexp.QuoteMeta(raw))
-	pattern.WriteByte('$')
+	if exactMatch {
+		pattern.WriteByte('$')
+	}
 
 	// Compile full regexp.
 	reg, errCompile := regexp.Compile(pattern.String())

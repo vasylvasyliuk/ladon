@@ -28,8 +28,8 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	. "github.com/ory/ladon"
-	"github.com/ory/ladon/compiler"
+	. "github.com/noahhai/ladon"
+	"github.com/noahhai/ladon/compiler"
 	"github.com/pkg/errors"
 	"github.com/rubenv/sql-migrate"
 )
@@ -180,7 +180,7 @@ func (s *SQLManager) create(policy Policy, tx *sqlx.Tx) (err error) {
 			h.Write([]byte(template))
 			id := fmt.Sprintf("%x", h.Sum(nil))
 
-			compiled, err := compiler.CompileRegex(template, policy.GetStartDelimiter(), policy.GetEndDelimiter())
+			compiled, err := compiler.CompileRegex(template, policy.GetStartDelimiter(), policy.GetEndDelimiter(), true)
 			if err != nil {
 				return errors.WithStack(err)
 			}

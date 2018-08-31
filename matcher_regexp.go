@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/golang-lru"
-	"github.com/ory/ladon/compiler"
+	"github.com/noahhai/ladon/compiler"
 	"github.com/pkg/errors"
 )
 
@@ -62,7 +62,7 @@ func (m *RegexpMatcher) set(pattern string, reg *regexp.Regexp) {
 }
 
 // Matches a needle with an array of regular expressions and returns true if a match was found.
-func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string) (bool, error) {
+func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string, exactMatch bool) (bool, error) {
 	var reg *regexp.Regexp
 	var err error
 	for _, h := range haystack {
@@ -85,7 +85,7 @@ func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string) (boo
 			continue
 		}
 
-		reg, err = compiler.CompileRegex(h, p.GetStartDelimiter(), p.GetEndDelimiter())
+		reg, err = compiler.CompileRegex(h, p.GetStartDelimiter(), p.GetEndDelimiter(), exactMatch)
 		if err != nil {
 			return false, errors.WithStack(err)
 		}

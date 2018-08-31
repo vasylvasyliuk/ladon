@@ -69,7 +69,7 @@ func (l *Ladon) DoPoliciesAllow(r *Request, policies []Policy) (err error) {
 		// Does the action match with one of the policies?
 		// This is the first check because usually actions are a superset of get|update|delete|set
 		// and thus match faster.
-		if pm, err := l.matcher().Matches(p, p.GetActions(), r.Action); err != nil {
+		if pm, err := l.matcher().Matches(p, p.GetActions(), r.Action, false); err != nil {
 			return errors.WithStack(err)
 		} else if !pm {
 			// no, continue to next policy
@@ -79,7 +79,7 @@ func (l *Ladon) DoPoliciesAllow(r *Request, policies []Policy) (err error) {
 		// Does the subject match with one of the policies?
 		// There are usually less subjects than resources which is why this is checked
 		// before checking for resources.
-		if sm, err := l.matcher().Matches(p, p.GetSubjects(), r.Subject); err != nil {
+		if sm, err := l.matcher().Matches(p, p.GetSubjects(), r.Subject, true); err != nil {
 			return err
 		} else if !sm {
 			// no, continue to next policy
@@ -87,7 +87,7 @@ func (l *Ladon) DoPoliciesAllow(r *Request, policies []Policy) (err error) {
 		}
 
 		// Does the resource match with one of the policies?
-		if rm, err := l.matcher().Matches(p, p.GetResources(), r.Resource); err != nil {
+		if rm, err := l.matcher().Matches(p, p.GetResources(), r.Resource, true); err != nil {
 			return errors.WithStack(err)
 		} else if !rm {
 			// no, continue to next policy

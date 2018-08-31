@@ -23,7 +23,7 @@ package memory
 import (
 	"sync"
 
-	. "github.com/ory/ladon"
+	. "github.com/noahhai/ladon"
 	"github.com/ory/pagination"
 	"github.com/pkg/errors"
 )

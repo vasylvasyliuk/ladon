@@ -63,6 +63,9 @@ type Policy interface {
 
 	// GetEndDelimiter returns the delimiter which identifies the end of a regular expression.
 	GetEndDelimiter() byte
+
+	// ToSummary converts the policy to a summary
+	ToSummary(resource string) PolicySummary
 }
 
 // DefaultPolicy is the default implementation of the policy interface.
@@ -75,6 +78,22 @@ type DefaultPolicy struct {
 	Actions     []string   `json:"actions" gorethink:"actions"`
 	Conditions  Conditions `json:"conditions" gorethink:"conditions"`
 	Meta        []byte     `json:"meta" gorethink:"meta"`
+}
+
+// PolicySummaryMap maps from Subject to PolicySummary
+type PolicySummaryMap map[string]PolicySummary
+
+// QualifiedAction contains the effect and the action
+type QualifiedAction struct {
+	Effect string `json:"effect" gorethink:"effect"`
+	Action string `json:"action" gorethink:"action"`
+}
+
+// PolicySummary is used for modifying policy docs for individual resources
+type PolicySummary struct {
+	Resource   string            `json:"-"`
+	Actions    []QualifiedAction `json:"actions" gorethink:"actions"`
+	Conditions Conditions        `json:"conditions" gorethink:"conditions"`
 }
 
 // UnmarshalJSON overwrite own policy with values of the given in policy in JSON format
@@ -171,4 +190,28 @@ func (p *DefaultPolicy) GetEndDelimiter() byte {
 // GetStartDelimiter returns the delimiter which identifies the beginning of a regular expression.
 func (p *DefaultPolicy) GetStartDelimiter() byte {
 	return '<'
+}
+
+// GetEndDelimiter returns the delimiter which identifies the end of a regular expression.
+func (p *PolicySummary) GetEndDelimiter() byte {
+	return '>'
+}
+
+// GetStartDelimiter returns the delimiter which identifies the beginning of a regular expression.
+func (p *PolicySummary) GetStartDelimiter() byte {
+	return '<'
+}
+
+func (p *DefaultPolicy) ToSummary(resource string) PolicySummary {
+	newPolSummary := PolicySummary{Resource: resource, Actions: []QualifiedAction{}, Conditions: p.GetConditions()}
+	effect := p.GetEffect()
+	qualifiedActions := []QualifiedAction{}
+	for _, actionComplete := range p.GetActions() {
+		for _, action := range trypSplitActionIfRegex(actionComplete) {
+			qualifiedAction := QualifiedAction{Action: action, Effect: effect}
+			qualifiedActions = append(qualifiedActions, qualifiedAction)
+		}
+	}
+	newPolSummary.Actions = qualifiedActions
+	return newPolSummary
 }

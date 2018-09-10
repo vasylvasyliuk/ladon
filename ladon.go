@@ -21,8 +21,8 @@
 package ladon
 
 import (
+	"fmt"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/pkg/errors"
 )
@@ -124,28 +124,39 @@ func (l *Ladon) DoPoliciesAllow(r *Request, policies []Policy) (err error) {
 	return nil
 }
 
-func (l *Ladon) GetPermissionsExplicit(resource string, policies []Policy) (Policies, error) {
-	var matchingPolicies = Policies{}
+func (l *Ladon) GetPermissionsExplicit(resource string) (Policies, error) {
+	policies, err := l.Manager.FindPoliciesForResource(resource)
+	if err != nil {
+		return nil, err
+	}
+	return l.GetPermissionsExplicitInternal(resource, policies)
+}
+
+func (l *Ladon) GetPermissionsExplicitInternal(resource string, policies []Policy) (Policies, error) {
+	matchingPolicies := Policies{}
 
 	// Iterate through all policies
 	for _, p := range policies {
-
-		isMatch := false
 		// Need exact matches here (explicit)
 		for _, res := range p.GetResources() {
 			if res == resource {
-				isMatch = true
+				matchingPolicies = append(matchingPolicies, p)
+				break
 			}
 		}
-		if !isMatch {
-			continue
-		}
-		matchingPolicies = append(matchingPolicies, p)
 	}
 	return matchingPolicies, nil
 }
 
-func (l *Ladon) GetPermissionsImplicit(resource string, policies []Policy) (PolicySummaryMap, error) {
+func (l *Ladon) GetPermissionsImplicit(resource string) (PolicySummaryMap, error) {
+	policies, err := l.Manager.FindPoliciesForResource(resource)
+	if err != nil {
+		return nil, err
+	}
+	return l.GetPermissionsImplicitInternal(resource, policies)
+}
+
+func (l *Ladon) GetPermissionsImplicitInternal(resource string, policies []Policy) (PolicySummaryMap, error) {
 	var matchingPolicies = Policies{}
 	var matchingPaths = make(map[string]string)
 	var effectivePolicies = PolicySummaryMap{}
@@ -155,17 +166,14 @@ func (l *Ladon) GetPermissionsImplicit(resource string, policies []Policy) (Poli
 		// Does the resource match with the policy?
 		if rm, err, match := l.matcher().Matches(p, p.GetResources(), resource, true); err != nil {
 			return effectivePolicies, errors.WithStack(err)
-		} else if !rm {
-			// no, continue to next policy
-			continue
-		} else {
+		} else if rm && match != "" {
 			matchingPaths[p.GetID()] = match
+			matchingPolicies = append(matchingPolicies, p)
 		}
-		matchingPolicies = append(matchingPolicies, p)
 	}
 
 	// TODO : group by subjects
-	for _, p := range policies {
+	for _, p := range matchingPolicies {
 		currentPath, ok := matchingPaths[p.GetID()]
 		if !ok {
 			return nil, errors.New("error determining relevant resource in implicit permissions calculation")
@@ -229,15 +237,17 @@ func GetMoreSpecificPath(resourcePath string, p1 PolicySummary, p2 PolicySummary
 	if strings.Count(p1.Resource, string(p1.GetStartDelimiter())) == 0 && strings.Count(p2.Resource, string(p2.GetStartDelimiter())) == 0 {
 		return len(p1.Resource) > len(p2.Resource)
 	}
-	_, splitRegex1, err := split(p1.Resource, "<>", false)
+	fmt.Println("Comparing paths '" + p1.Resource + "' and '" + p2.Resource + "'")
+	splitRegex1, err := split(p1.Resource, "<>")
 	if err != nil {
 		panic("error determining more specific path: " + err.Error())
 	}
-	_, splitRegex2, err := split(p2.Resource, "<>", false)
+	splitRegex2, err := split(p2.Resource, "<>")
 	if err != nil {
 		panic("error determining more specific path: " + err.Error())
 	}
-	if len(splitRegex1)%2 != 0 || len(splitRegex2)%2 != 0 {
+	if (len(splitRegex1) > 1 && len(splitRegex1)%2 != 0) ||
+		(len(splitRegex2) > 1 && len(splitRegex2)%2 != 0) {
 		panic("error determining more specific path; invalid resource path")
 	}
 	var highestMatchIndex1, highestMatchIndex2 int
@@ -263,18 +273,34 @@ func GetMoreSpecificPath(resourcePath string, p1 PolicySummary, p2 PolicySummary
 	return highestMatchIndex1 > highestMatchIndex2
 }
 
-func split(data string, delimiters string, atEOF bool) (advance int, token []byte, err error) {
-	dataByte := []byte(data)
-	i := strings.IndexAny(data, string(delimiters))
-	switch {
-	case i < 0 && !atEOF:
-		return 0, nil, nil
-	case i < 0 && atEOF:
-		i = len(dataByte)
-	case i == 0:
-		_, i = utf8.DecodeRune(dataByte) // just "i = 1" is fine for ASCII
+func split(data string, delimiters string) (results []string, err error) {
+	if data == "" {
+		return nil, errors.New("cannot split empty string")
 	}
-	return i, dataByte[:i], nil
+	if delimiters == "" {
+		return nil, errors.New("delimiters cannot be empty")
+	}
+	dataLength := len(data)
+
+	res := make([]string, dataLength)
+	currBuilder := strings.Builder{}
+	for _, dataPoint := range data {
+		isDelim := false
+		for _, delimPoint := range delimiters {
+			if dataPoint == delimPoint {
+				isDelim = true
+				break
+			}
+		}
+		if isDelim {
+			res = append(res, currBuilder.String())
+		} else {
+			if _, err := currBuilder.WriteRune(dataPoint); err != nil {
+				return res, err
+			}
+		}
+	}
+	return res, nil
 }
 
 func (l *Ladon) passesConditions(p Policy, r *Request) bool {

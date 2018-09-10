@@ -434,7 +434,7 @@ func TestLadonGetPermissionImplicit(t *testing.T) {
 
 	for k, c := range implicitPermissionCases {
 		t.Run(fmt.Sprintf("case=%d:(%s)", k, c.resource), func(t *testing.T) {
-			summary, err := warden.GetPermissionsImplicit(c.resource, c.policies)
+			summary, err := warden.GetPermissionsImplicitInternal(c.resource, c.policies)
 			// need to clear PolicySummary.Resource since not serialized anyway and only used internally
 			for k, v := range summary {
 				v.Resource = ""

@@ -5,8 +5,8 @@
 
 [![Build Status](https://travis-ci.org/ory/ladon.svg?branch=master)](https://travis-ci.org/ory/ladon)
 [![Coverage Status](https://coveralls.io/repos/ory/ladon/badge.svg?branch=master&service=github)](https://coveralls.io/github/ory/ladon?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ory/ladon)](https://goreportcard.com/report/github.com/ory/ladon)
-[![GoDoc](https://godoc.org/github.com/ory/ladon?status.png)](https://godoc.org/github.com/ory/ladon)
+[![Go Report Card](https://goreportcard.com/badge/github.com/noahhai/ladon)](https://goreportcard.com/report/github.com/noahhai/ladon)
+[![GoDoc](https://godoc.org/github.com/noahhai/ladon?status.png)](https://godoc.org/github.com/noahhai/ladon)
 
 [Ladon](https://en.wikipedia.org/wiki/Ladon_%28mythology%29) is the serpent dragon protecting your resources.
 
@@ -63,7 +63,7 @@ Please refer to [ory-am/dockertest](https://github.com/ory-am/dockertest) for mo
 ## Installation
 
 ```
-go get github.com/ory/ladon
+go get github.com/noahhai/ladon
 ```
 
 We recommend to use [Dep](https://github.com/golang/dep) for dependency management. Ladon uses [semantic
@@ -188,7 +188,7 @@ are abstracted as the `ladon.Policy` interface, and Ladon comes with a standard 
 which is `ladon.DefaultPolicy`. Creating such a policy could look like:
 
 ```go
-import "github.com/ory/ladon"
+import "github.com/noahhai/ladon"
 
 var pol = &ladon.DefaultPolicy{
 	// A required unique identifier. Used primarily for database retrieval.
@@ -574,7 +574,7 @@ var err = warden.IsAllowed(&ladon.Request{
 You can add custom conditions by appending it to `ladon.ConditionFactories`:
 
 ```go
-import "github.com/ory/ladon"
+import "github.com/noahhai/ladon"
 
 func main() {
     // ...
@@ -591,7 +591,7 @@ func main() {
 
 Obviously, creating such a policy is not enough. You want to persist it too. Ladon ships an interface `ladon.Manager` for
 this purpose with default implementations for In-Memory and SQL (PostgreSQL, MySQL) via [sqlx](github.com/jmoiron/sqlx). 
-There are also adapters available written by the community [for Redis and RethinkDB](https://github.com/ory/ladon-community)
+There are also adapters available written by the community [for Redis and RethinkDB](https://github.com/noahhai/ladon-community)
 
 Let's take a look how to instantiate those:
 
@@ -599,8 +599,8 @@ Let's take a look how to instantiate those:
 
 ```go
 import (
-	"github.com/ory/ladon"
-	manager "github.com/ory/ladon/manager/memory"
+	"github.com/noahhai/ladon"
+	manager "github.com/noahhai/ladon/manager/memory"
 )
 
 
@@ -617,8 +617,8 @@ func main() {
 **SQL** (officially supported)
 
 ```go
-import "github.com/ory/ladon"
-import manager "github.com/ory/ladon/manager/sql"
+import "github.com/noahhai/ladon"
+import manager "github.com/noahhai/ladon/manager/sql"
 import "github.com/jmoiron/sqlx"
 import _ "github.com/go-sql-driver/mysql"
 
@@ -664,7 +664,7 @@ Now that we have defined our policies, we can use the warden to check if a reque
 will return `nil` if the access request can be granted and an error otherwise.
 
 ```go
-import "github.com/ory/ladon"
+import "github.com/noahhai/ladon"
 
 func main() {
     // ...
@@ -690,8 +690,8 @@ In order to keep track of authorization grants and denials, it is possible to at
 The provided `ladon.AuditLoggerInfo` outputs information about the policies involved when responding to authorization requests.
 
 ```go
-import "github.com/ory/ladon"
-import manager "github.com/ory/ladon/manager/memory"
+import "github.com/noahhai/ladon"
+import manager "github.com/noahhai/ladon/manager/memory"
 
 func main() {
 
@@ -745,12 +745,12 @@ Ladon does not use reflection for matching conditions to their appropriate struc
 
 **Create mocks**
 ```sh
-mockgen -package ladon_test -destination manager_mock_test.go github.com/ory/ladon Manager
+mockgen -package ladon_test -destination manager_mock_test.go github.com/noahhai/ladon Manager
 ```
 
 ## Third Party Libraries
 By implementing the warden.Manager it is possible to create your own adapters to persist data in a datastore of your choice. Below are a list of third party implementations.
 
-- [Redis and RethinkDB](https://github.com/ory/ladon-community)
+- [Redis and RethinkDB](https://github.com/noahhai/ladon-community)
 - [CockroachDB](https://github.com/wehco/ladon-crdb)
 - [sql.DB](https://github.com/wirepair/ladonsecuritymanager)

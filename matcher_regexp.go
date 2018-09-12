@@ -62,7 +62,7 @@ func (m *RegexpMatcher) set(pattern string, reg *regexp.Regexp) {
 }
 
 // Matches a needle with an array of regular expressions and returns true if a match was found.
-func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string, exactMatch bool) (bool, error) {
+func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string, exactMatch bool) (bool, error, string) {
 	var reg *regexp.Regexp
 	var err error
 	for _, h := range haystack {
@@ -71,7 +71,7 @@ func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string, exac
 		if strings.Count(h, string(p.GetStartDelimiter())) == 0 {
 			// If we have a simple string match, we've got a match!
 			if h == needle {
-				return true, nil
+				return true, nil, h
 			}
 
 			// Not string match, but also no regexp, continue with next haystack item
@@ -80,20 +80,20 @@ func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string, exac
 
 		if reg = m.get(h); reg != nil {
 			if reg.MatchString(needle) {
-				return true, nil
+				return true, nil, h
 			}
 			continue
 		}
 
 		reg, err = compiler.CompileRegex(h, p.GetStartDelimiter(), p.GetEndDelimiter(), exactMatch)
 		if err != nil {
-			return false, errors.WithStack(err)
+			return false, errors.WithStack(err), ""
 		}
 
 		m.set(h, reg)
 		if reg.MatchString(needle) {
-			return true, nil
+			return true, nil, h
 		}
 	}
-	return false, nil
+	return false, nil, ""
 }

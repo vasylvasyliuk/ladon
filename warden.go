@@ -42,4 +42,10 @@ type Warden interface {
 	//    return errors.New("Not allowed")
 	//  }
 	IsAllowed(r *Request) error
+
+	// Returns permissions granted onto exact resource
+	GetPermissionsExplicit(resource string) (Policies, error)
+
+	// Returns permissions granted onto resource via pattern matching
+	GetPermissionsImplicit(resource string) (PolicySummaryMap, error)
 }

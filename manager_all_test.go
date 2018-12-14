@@ -27,10 +27,10 @@ import (
 	"sync"
 	"testing"
 
-	. "github.com/noahhai/ladon"
-	"github.com/noahhai/ladon/integration"
-	. "github.com/noahhai/ladon/manager/memory"
-	. "github.com/noahhai/ladon/manager/sql"
+	. "github.com/thycotic-rd/ladon"
+	"github.com/thycotic-rd/ladon/integration"
+	. "github.com/thycotic-rd/ladon/manager/memory"
+	. "github.com/thycotic-rd/ladon/manager/sql"
 	"github.com/stretchr/testify/require"
 )
 

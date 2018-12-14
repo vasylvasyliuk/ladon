@@ -27,9 +27,9 @@ import (
 	"log"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/noahhai/ladon"
-	. "github.com/noahhai/ladon"
-	"github.com/noahhai/ladon/compiler"
+	"github.com/thycotic-rd/ladon"
+	. "github.com/thycotic-rd/ladon"
+	"github.com/thycotic-rd/ladon/compiler"
 	"github.com/pkg/errors"
 )
 

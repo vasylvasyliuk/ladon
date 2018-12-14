@@ -5,7 +5,7 @@ BooleanCondition is used to determine if a boolean context matches an expected
 boolean condition.
 
 BooleanCondition implements the ladon.Condition interface.
-See https://github.com/noahhai/ladon/blob/master/condition.go
+See https://github.com/thycotic-rd/ladon/blob/master/condition.go
 */
 type BooleanCondition struct {
 	BooleanValue bool `json:"value"`

@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	. "github.com/noahhai/ladon"
+	. "github.com/thycotic-rd/ladon"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )

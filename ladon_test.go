@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/noahhai/ladon"
-	. "github.com/noahhai/ladon/manager/memory"
+	. "github.com/thycotic-rd/ladon"
+	. "github.com/thycotic-rd/ladon/manager/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/golang-lru"
-	"github.com/noahhai/ladon/compiler"
+	"github.com/thycotic-rd/ladon/compiler"
 	"github.com/pkg/errors"
 )
 

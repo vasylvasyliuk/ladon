@@ -8,7 +8,7 @@ env:
 
 language: go
 
-go_import_path: github.com/noahhai/ladon
+go_import_path: github.com/thycotic-rd/ladon
 
 go:
   - 1.9

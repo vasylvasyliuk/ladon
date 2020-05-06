@@ -84,7 +84,7 @@ func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string, exac
 				// according to regexp2 documentation: https://github.com/dlclark/regexp2#usage
 				// The only error that the *Match* methods should return is a Timeout if you set the
 				// re.MatchTimeout field. Any other error is a bug in the regexp2 package.
-				return false, errors.WithStack(err)
+				return false, errors.WithStack(err), ""
 			} else if matched {
 				return true, nil, h
 			}
@@ -101,7 +101,7 @@ func (m *RegexpMatcher) Matches(p Policy, haystack []string, needle string, exac
 			// according to regexp2 documentation: https://github.com/dlclark/regexp2#usage
 			// The only error that the *Match* methods should return is a Timeout if you set the
 			// re.MatchTimeout field. Any other error is a bug in the regexp2 package.
-			return false, errors.WithStack(err)
+			return false, errors.WithStack(err), ""
 		} else if matched {
 			return true, nil, h
 		}

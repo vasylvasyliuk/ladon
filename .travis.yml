@@ -5,7 +5,7 @@ env:
 
 language: go
 
-go_import_path: github.com/thycotic-rd/ladon
+go_import_path: github.com/ory/ladon
 
 go:
   - 1.11

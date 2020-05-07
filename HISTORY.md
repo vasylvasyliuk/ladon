@@ -14,6 +14,13 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
+## 1.0.0
+
+The SQL storage implementation has been removed. The reason being that it had serious scalability issues which could
+cause trouble in high-throughput environments.
+
+Everything else stays the same, ORY Ladon is now feature-complete.
+
 ## 0.8.0
 
 Managers now must implement `Update(policy Policy) error`.
@@ -36,12 +43,12 @@ and restructures the repository.
 
 ### New location
 
-The location of this library changed from `github.com/ory-am/ladon` to `github.com/thycotic-rd/ladon`.
+The location of this library changed from `github.com/ory-am/ladon` to `github.com/ory/ladon`.
 
 ### Deprecating Redis and RethinkDB
 
 Redis and RethinkDB are no longer maintained by ORY and were moved to
-[ory/ladon-community](https://github.com/thycotic-rd/ladon-community). The adapters had various
+[ory/ladon-community](https://github.com/ory/ladon-community). The adapters had various
 bugs and performance issues which is why they were removed from the official repository.
 
 ### New packages

@@ -24,16 +24,17 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/thycotic-rd/ladon"
-	. "github.com/thycotic-rd/ladon/manager/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	. "github.com/ory/ladon"
+	. "github.com/ory/ladon/manager/memory"
 )
 
 // A bunch of exemplary policies
 var pols = []Policy{
 	&DefaultPolicy{
-		ID: "1",
+		ID: "0",
 		Description: `This policy allows max, peter, zac and ken to create, delete and get the listed resources,
 			but only if the client ip matches and the request states that they are the owner of those resources as well.`,
 		Subjects:  []string{"max", "peter", "<zac|ken>"},
@@ -48,7 +49,7 @@ var pols = []Policy{
 		},
 	},
 	&DefaultPolicy{
-		ID:          "2",
+		ID:          "1",
 		Description: "This policy allows max to update any resource",
 		Subjects:    []string{"max"},
 		Actions:     []string{"update"},
@@ -62,6 +63,30 @@ var pols = []Policy{
 		Actions:     []string{"broadcast"},
 		Resources:   []string{"<.*>"},
 		Effect:      DenyAccess,
+	},
+	&DefaultPolicy{
+		ID:          "2",
+		Description: "This policy denies max to broadcast any of the resources",
+		Subjects:    []string{"max"},
+		Actions:     []string{"random"},
+		Resources:   []string{"<.*>"},
+		Effect:      DenyAccess,
+	},
+	&DefaultPolicy{
+		ID:          "4",
+		Description: "This policy allows swen to update any resource except `protected` resources",
+		Subjects:    []string{"swen"},
+		Actions:     []string{"update"},
+		Resources:   []string{"myrn:some.domain.com:resource:<(?!protected).*>"},
+		Effect:      AllowAccess,
+	},
+	&DefaultPolicy{
+		ID:          "5",
+		Description: "This policy allows richard to update resources which names consists of digits only",
+		Subjects:    []string{"richard"},
+		Actions:     []string{"update"},
+		Resources:   []string{"myrn:some.domain.com:resource:<[[:digit:]]+>"},
+		Effect:      AllowAccess,
 	},
 }
 
@@ -145,6 +170,42 @@ var cases = []struct {
 		},
 		expectErr: true,
 	},
+	{
+		description: "should pass because swen is allowed to update all resources except `protected` resources.",
+		accessRequest: &Request{
+			Subject:  "swen",
+			Action:   "update",
+			Resource: "myrn:some.domain.com:resource:123",
+		},
+		expectErr: false,
+	},
+	{
+		description: "should fail because swen is not allowed to update `protected` resource",
+		accessRequest: &Request{
+			Subject:  "swen",
+			Action:   "update",
+			Resource: "myrn:some.domain.com:resource:protected123",
+		},
+		expectErr: true,
+	},
+	{
+		description: "should fail because richard is not allowed to update a resource with alphanumeric name",
+		accessRequest: &Request{
+			Subject:  "richard",
+			Action:   "update",
+			Resource: "myrn:some.domain.com:resource:protected123",
+		},
+		expectErr: true,
+	},
+	{
+		description: "should pass because richard is allowed to update a resources with a name containing digits only",
+		accessRequest: &Request{
+			Subject:  "richard",
+			Action:   "update",
+			Resource: "myrn:some.domain.com:resource:25222",
+		},
+		expectErr: false,
+	},
 }
 
 func TestLadon(t *testing.T) {
@@ -156,6 +217,15 @@ func TestLadon(t *testing.T) {
 		require.Nil(t, warden.Manager.Create(pol))
 	}
 
+	for i := 0; i < len(pols); i++ {
+		polices, err := warden.Manager.GetAll(int64(1), int64(i))
+		require.NoError(t, err)
+		p, err := warden.Manager.Get(fmt.Sprintf("%d", i))
+		if err == nil {
+			AssertPolicyEqual(t, p, polices[0])
+		}
+	}
+
 	for k, c := range cases {
 		t.Run(fmt.Sprintf("case=%d-%s", k, c.description), func(t *testing.T) {
 
@@ -165,6 +235,7 @@ func TestLadon(t *testing.T) {
 			assert.Equal(t, c.expectErr, err != nil)
 		})
 	}
+
 }
 
 func TestLadonEmpty(t *testing.T) {

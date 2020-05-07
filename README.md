@@ -1,12 +1,12 @@
 <h1 align="center"><img src="./docs/images/banner_ladon.png" alt="ORY Ladon - Policy-based Access Control"></h1>
 
-[![Join the chat at https://discord.gg/PAMQWkr](https://img.shields.io/badge/join-chat-00cc99.svg)](https://discord.gg/PAMQWkr)
+[![Join the chat at https://www.ory.sh/chat](https://img.shields.io/badge/join-chat-00cc99.svg)](https://www.ory.sh/chat)
 [![Join newsletter](https://img.shields.io/badge/join-newsletter-00cc99.svg)](http://eepurl.com/bKT3N9)
 
 [![Build Status](https://travis-ci.org/ory/ladon.svg?branch=master)](https://travis-ci.org/ory/ladon)
 [![Coverage Status](https://coveralls.io/repos/ory/ladon/badge.svg?branch=master&service=github)](https://coveralls.io/github/ory/ladon?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/thycotic-rd/ladon)](https://goreportcard.com/report/github.com/thycotic-rd/ladon)
-[![GoDoc](https://godoc.org/github.com/thycotic-rd/ladon?status.png)](https://godoc.org/github.com/thycotic-rd/ladon)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ory/ladon)](https://goreportcard.com/report/github.com/ory/ladon)
+[![GoDoc](https://godoc.org/github.com/ory/ladon?status.png)](https://godoc.org/github.com/ory/ladon)
 
 [Ladon](https://en.wikipedia.org/wiki/Ladon_%28mythology%29) is the serpent dragon protecting your resources.
 
@@ -16,7 +16,10 @@ In contrast to [ACL](https://en.wikipedia.org/wiki/Access_control_list) and [RBA
 you get fine-grained access control with the ability to answer questions in complex environments such as multi-tenant or distributed applications
 and large organizations. Ladon is inspired by [AWS IAM Policies](http://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html).
 
-Ladon officially ships with storage adapters for SQL (officially supported: MySQL 5.5+, PostgreSQL 9.2+) and in-memory. Community adapters are available for [CockroachDB](https://github.com/wehco/ladon-crdb).
+Ladon officially ships with an exemplary in-memory storage implementations.
+Community-supported adapters are available for [CockroachDB](https://github.com/wehco/ladon-crdb).
+
+Ladon is now considered stable.
 
 ---
 
@@ -49,6 +52,7 @@ ORY builds solutions for better internet security and accessibility. We have a c
     - [Persistence](#persistence)
   - [Access Control (Warden)](#access-control-warden)
   - [Audit Log (Warden)](#audit-log-warden)
+  - [Metrics](#metrics)
 - [Limitations](#limitations)
   - [Regular expressions](#regular-expressions)
 - [Examples](#examples)
@@ -62,12 +66,14 @@ Please refer to [ory-am/dockertest](https://github.com/ory-am/dockertest) for mo
 
 ## Installation
 
+This library works with Go 1.11+.
+
 ```
-go get github.com/thycotic-rd/ladon
+export GO111MODULE=on
+go get github.com/ory/ladon
 ```
 
-We recommend to use [Dep](https://github.com/golang/dep) for dependency management. Ladon uses [semantic
-versioning](http://semver.org/) and versions beginning with zero (`0.1.2`) might introduce backwards compatibility
+Ladon uses [semantic versioning](http://semver.org/) and versions beginning with zero (`0.1.2`) might introduce backwards compatibility
 breaks with [each minor version](http://semver.org/#how-should-i-deal-with-revisions-in-the-0yz-initial-development-phase).
 
 ## Concepts
@@ -122,7 +128,7 @@ and can answer access requests that look like:
 ```
 
 However, Ladon does not come with a HTTP or server implementation. It does not restrict JSON either. We believe that it is your job to decide
-if you want to use Protobuf, RESTful, HTTP, AMPQ, or some other protocol. It's up to you to write server!
+if you want to use Protobuf, RESTful, HTTP, AMQP, or some other protocol. It's up to you to write the server!
 
 The following example should give you an idea what a RESTful flow *could* look like. Initially we create a policy by
 POSTing it to an artificial HTTP endpoint:
@@ -188,7 +194,7 @@ are abstracted as the `ladon.Policy` interface, and Ladon comes with a standard 
 which is `ladon.DefaultPolicy`. Creating such a policy could look like:
 
 ```go
-import "github.com/thycotic-rd/ladon"
+import "github.com/ory/ladon"
 
 var pol = &ladon.DefaultPolicy{
 	// A required unique identifier. Used primarily for database retrieval.
@@ -203,7 +209,11 @@ var pol = &ladon.DefaultPolicy{
 
 	// Which resources this policy affects.
 	// Again, you can put regular expressions in inside < >.
-	Resources: []string{"myrn:some.domain.com:resource:123", "myrn:some.domain.com:resource:345", "myrn:something:foo:<.+>"},
+	Resources: []string{
+            "myrn:some.domain.com:resource:123", "myrn:some.domain.com:resource:345",
+            "myrn:something:foo:<.+>", "myrn:some.domain.com:resource:<(?!protected).*>",
+            "myrn:some.domain.com:resource:<[[:digit:]]+>"
+        },
 
 	// Which actions this policy affects. Supports RegExp
 	// Again, you can put regular expressions in inside < >.
@@ -284,7 +294,7 @@ This condition is fulfilled by (we will cover the warden in the next section)
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
         "some-arbitrary-key": "the-value-should-be-this",
     },
 }
@@ -295,7 +305,7 @@ but not by
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
         "some-arbitrary-key": "some other value",
     },
 }
@@ -306,7 +316,7 @@ and neither by:
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
         "same value but other key": "the-value-should-be-this",
     },
 }
@@ -366,7 +376,7 @@ and would match in the following case:
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
          "some-arbitrary-key": "the-value-should-be-this",
     },
 }
@@ -390,7 +400,7 @@ and would match in the following case:
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
         "some-arbitrary-key": true,
     },
 })
@@ -421,7 +431,7 @@ and would match in the following case:
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
           "some-arbitrary-key": "regex-pattern-here111"
     }
   }
@@ -446,7 +456,7 @@ and would match
 var err = warden.IsAllowed(&ladon.Request{
     // ...
     Subject: "peter",
-    Context: &ladon.Context{
+    Context: ladon.Context{
          "some-arbitrary-key": "peter",
     },
 }
@@ -458,7 +468,7 @@ but not:
 var err = warden.IsAllowed(&ladon.Request{
     // ...
     Subject: "peter",
-    Context: &ladon.Context{
+    Context: ladon.Context{
          "some-arbitrary-key": "max",
     },
 }
@@ -482,7 +492,7 @@ and would match
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
          "some-arbitrary-key": [
              ["some-arbitrary-pair-value", "some-arbitrary-pair-value"],
              ["some-other-arbitrary-pair-value", "some-other-arbitrary-pair-value"],
@@ -496,7 +506,7 @@ but not:
 ```go
 var err = warden.IsAllowed(&ladon.Request{
     // ...
-    Context: &ladon.Context{
+    Context: ladon.Context{
          "some-arbitrary-key": [
              ["some-arbitrary-pair-value", "some-other-arbitrary-pair-value"],
          ]
@@ -535,7 +545,7 @@ This condition is fulfilled by this (allow for all resources containing `part:no
 var err = warden.IsAllowed(&ladon.Request{
     // ...
     Resource: "rn:city:laholm:part:north"
-    Context: &ladon.Context{
+    Context: ladon.Context{
       delimiter: ":",
       value: "part:north"
     },
@@ -548,7 +558,7 @@ or ( allow all resources with `city:laholm`)
 var err = warden.IsAllowed(&ladon.Request{
     // ...
     Resource: "rn:city:laholm:part:north"
-    Context: &ladon.Context{
+    Context: ladon.Context{
       delimiter: ":",
       value: "city:laholm"
     },
@@ -561,7 +571,7 @@ but not (allow for all resources containing `part:west`, the resource does not c
 var err = warden.IsAllowed(&ladon.Request{
     // ...
     Resource: "rn:city:laholm:part:north"
-    Context: &ladon.Context{
+    Context: ladon.Context{
       delimiter: ":",
       value: "part:west"
     },
@@ -574,7 +584,7 @@ var err = warden.IsAllowed(&ladon.Request{
 You can add custom conditions by appending it to `ladon.ConditionFactories`:
 
 ```go
-import "github.com/thycotic-rd/ladon"
+import "github.com/ory/ladon"
 
 func main() {
     // ...
@@ -590,8 +600,8 @@ func main() {
 #### Persistence
 
 Obviously, creating such a policy is not enough. You want to persist it too. Ladon ships an interface `ladon.Manager` for
-this purpose with default implementations for In-Memory and SQL (PostgreSQL, MySQL) via [sqlx](github.com/jmoiron/sqlx). 
-There are also adapters available written by the community [for Redis and RethinkDB](https://github.com/thycotic-rd/ladon-community)
+this purpose. You have to implement that interface for persistence. An exemplary in-memory adapter can be found in
+[./manager/memory/manager_memory.go](./manager/memory/manager_memory.go):
 
 Let's take a look how to instantiate those:
 
@@ -599,8 +609,8 @@ Let's take a look how to instantiate those:
 
 ```go
 import (
-	"github.com/thycotic-rd/ladon"
-	manager "github.com/thycotic-rd/ladon/manager/memory"
+	"github.com/ory/ladon"
+	manager "github.com/ory/ladon/manager/memory"
 )
 
 
@@ -614,49 +624,6 @@ func main() {
 }
 ```
 
-**SQL** (officially supported)
-
-```go
-import "github.com/thycotic-rd/ladon"
-import manager "github.com/thycotic-rd/ladon/manager/sql"
-import "github.com/jmoiron/sqlx"
-import _ "github.com/go-sql-driver/mysql"
-
-func main() {
-    // The database manager expects a sqlx.DB object
-    //
-    // For MySQL, be sure to include parseTime=true in the connection string
-    // You can find all of the supported MySQL connection string options for the
-    // driver at: https://github.com/go-sql-driver/mysql
-    //
-    db, err = sqlx.Open("mysql", "user:pass@tcp(127.0.0.1:3306)/?parseTime=true")
-    // Or, if using postgres:
-    //  import _ "github.com/lib/pq"
-    //
-    //  db, err = sqlx.Open("postgres", "postgres://foo:bar@localhost/ladon")
-    if err != nil {
-      log.Fatalf("Could not connect to database: %s", err)
-    }
-
-    warden := &ladon.Ladon{
-        Manager: manager.NewSQLManager(db, nil),
-    }
-
-    // You must call SQLManager.CreateSchemas(schema, table) before use
-    // to apply the necessary SQL migrations
-    //
-    // You can provide your own schema and table name or pass
-    // empty strings to use the default
-    n, err := warden.Manager.CreateSchemas("", "")
-    if err != nil {
-      log.Fatalf("Failed to create schemas: %s", err)
-    }
-    log.Printf("applied %d migrations", n)
-
-    // ...
-}
-```
-
 ### Access Control (Warden)
 
 Now that we have defined our policies, we can use the warden to check if a request is valid.
@@ -664,19 +631,20 @@ Now that we have defined our policies, we can use the warden to check if a reque
 will return `nil` if the access request can be granted and an error otherwise.
 
 ```go
-import "github.com/thycotic-rd/ladon"
+import "github.com/ory/ladon"
 
 func main() {
     // ...
 
-    if err := warden.IsAllowed(&ladon.Request{
+    err := warden.IsAllowed(&ladon.Request{
         Subject: "peter",
         Action: "delete",
         Resource: "myrn:some.domain.com:resource:123",
         Context: ladon.Context{
             "ip": "127.0.0.1",
         },
-    }); err != nil {
+    })
+    if err != nil {
         log.Fatal("Access denied")
     }
 
@@ -690,8 +658,8 @@ In order to keep track of authorization grants and denials, it is possible to at
 The provided `ladon.AuditLoggerInfo` outputs information about the policies involved when responding to authorization requests.
 
 ```go
-import "github.com/thycotic-rd/ladon"
-import manager "github.com/thycotic-rd/ladon/manager/memory"
+import "github.com/ory/ladon"
+import manager "github.com/ory/ladon/manager/memory"
 
 func main() {
 
@@ -706,13 +674,35 @@ func main() {
 
 It will output to `stderr` by default.
 
+### Metrics
+
+Ability to track authorization grants,denials and errors, it is possible to implement own interface for processing metrics.
+
+```go
+type prometheusMetrics struct{}
+
+func (mtr *prometheusMetrics) RequestDeniedBy(r ladon.Request, p ladon.Policy) {}
+func (mtr *prometheusMetrics) RequestAllowedBy(r ladon.Request, policies ladon.Policies) {}
+func (mtr *prometheusMetrics) RequestNoMatch(r ladon.Request) {}
+func (mtr *prometheusMetrics) RequestProcessingError(r ladon.Request, err error) {}
+
+func main() {
+
+    warden := ladon.Ladon{
+        Manager: manager.NewMemoryManager(),
+        Metric:  &prometheusMetrics{},
+    }
+
+    // ...
+```
+
 ## Limitations
 
 Ladon's limitations are listed here.
 
 ### Regular expressions
 
-Matching regular expressions has a complexity of `O(n)` and databases such as MySQL or Postgres can not
+Matching regular expressions has a complexity of `O(n)` ([except](https://groups.google.com/d/msg/golang-nuts/7qgSDWPIh_E/OHTAm4wRZL0J) lookahead/lookbehind assertions) and databases such as MySQL or Postgres can not
 leverage indexes when parsing regular expressions. Thus, there is considerable overhead when using regular
 expressions.
 
@@ -745,12 +735,12 @@ Ladon does not use reflection for matching conditions to their appropriate struc
 
 **Create mocks**
 ```sh
-mockgen -package ladon_test -destination manager_mock_test.go github.com/thycotic-rd/ladon Manager
+mockgen -package ladon_test -destination manager_mock_test.go github.com/ory/ladon Manager
 ```
 
 ## Third Party Libraries
 By implementing the warden.Manager it is possible to create your own adapters to persist data in a datastore of your choice. Below are a list of third party implementations.
 
-- [Redis and RethinkDB](https://github.com/thycotic-rd/ladon-community)
+- [Redis and RethinkDB](https://github.com/ory/ladon-community)
 - [CockroachDB](https://github.com/wehco/ladon-crdb)
 - [sql.DB](https://github.com/wirepair/ladonsecuritymanager)

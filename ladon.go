@@ -192,40 +192,54 @@ func (l *Ladon) GetPermissionsImplicitInternal(resource string, policies []Polic
 
 	// TODO : group by subjects
 	for _, p := range matchingPolicies {
-		currentPath, ok := matchingPaths[p.GetID()]
+		_, ok := matchingPaths[p.GetID()]
 		if !ok {
 			return nil, errors.New("error determining relevant resource in implicit permissions calculation")
 		}
+		effect := p.GetEffect()
 		for _, subject := range p.GetSubjects() {
-			if currentPol, exists := effectivePolicies[subject]; exists {
-				for _, actionNewAll := range p.GetActions() {
-					effectNew := p.GetEffect()
-					for i, actionNew := range trypSplitActionIfRegex(actionNewAll) {
-
-						for _, actionCurrent := range currentPol.Actions {
-							if actionCurrent.Action == actionNew {
-								if actionCurrent.Effect == effectNew {
-									newPolSummary := p.ToSummary(currentPath)
-									if GetMoreSpecificPath(currentPath, newPolSummary, currentPol) {
-										effectivePolicies[subject] = newPolSummary
-									}
-								} else {
-									// at least one is deny, which trumps
-									effectivePolicies[subject].Actions[i].Effect = "deny"
-								}
-							} else {
-								currentPol.Actions = append(currentPol.Actions, QualifiedAction{Action: actionNew, Effect: effectNew})
-							}
-						}
-					}
-				}
-
-			} else {
-				effectivePolicies[subject] = p.ToSummary(currentPath)
+			if _, exists := effectivePolicies[subject]; !exists {
+				effectivePolicies[subject] = p.ToSummary(resource)
+				continue
 			}
+			for _, action := range getPolicyActions(p) {
+				idx := getActionIndex(effectivePolicies[subject].Actions, action)
+				if idx != -1 {
+					if effect == DenyAccess {
+						effectivePolicies[subject].Actions[idx].Effect = DenyAccess
+					}
+				} else {
+					policySummary := effectivePolicies[subject]
+					policySummary.Actions = append(policySummary.Actions, QualifiedAction{
+						Effect: effect,
+						Action: action,
+					})
+					effectivePolicies[subject] = policySummary
+				}
+			}
+
 		}
 	}
 	return effectivePolicies, nil
+}
+
+func getActionIndex(qa []QualifiedAction, action string) int {
+	for k, v := range qa {
+		if v.Action == action {
+			return k
+		}
+	}
+	return -1
+}
+
+func getPolicyActions(p Policy) []string {
+	actions := []string{}
+	for _, actionWithPossibleRegexp := range p.GetActions() {
+		for _, action := range trypSplitActionIfRegex(actionWithPossibleRegexp) {
+			actions = append(actions, action)
+		}
+	}
+	return actions
 }
 
 func trypSplitActionIfRegex(action string) []string {

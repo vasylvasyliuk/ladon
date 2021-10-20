@@ -1,5 +1,7 @@
 module github.com/ory/ladon
 
+go 1.16
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.2.0
